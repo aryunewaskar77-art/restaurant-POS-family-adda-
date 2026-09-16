@@ -29,7 +29,7 @@ export default async function AdminPantryPage() {
           <p>Please run the <code>04_pantry.sql</code> migration in your Supabase SQL Editor to enable Pantry Management.</p>
         </div>
       ) : (
-        <PantryManagerClient initialItems={pantryItems || []} restaurantId={restaurantId} />
+        <PantryManagerClient initialItems={pantryItems || []} />
       )}
     </div>
   );

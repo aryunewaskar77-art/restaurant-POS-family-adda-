@@ -26,7 +26,7 @@ export async function placeOrder(rawInput: CreateOrderInput) {
   }));
   
   // Need to bypass TypeScript generic strictness for this RPC call since the type might not be updated in the auto-generated types
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   const { data, error } = await (supabase as any).rpc("create_customer_order", {
     p_restaurant_id: restaurantId,
     p_table_identifier: tableIdentifier,

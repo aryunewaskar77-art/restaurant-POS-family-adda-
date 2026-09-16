@@ -16,7 +16,7 @@ export function CategoryNav({ categories, activeCategoryId }: CategoryNavProps) 
   };
 
   return (
-    <div className="sticky top-0 bg-white/95 backdrop-blur z-20 border-b border-gray-100 px-4 py-3 overflow-x-auto whitespace-nowrap scrollbar-hide flex gap-2">
+    <div className="sticky top-14 bg-white/95 backdrop-blur z-20 border-b border-gray-100 px-4 py-3 overflow-x-auto whitespace-nowrap scrollbar-hide flex gap-2">
       {categories.map((cat) => {
         const isActive = activeCategoryId === cat.id;
         return (

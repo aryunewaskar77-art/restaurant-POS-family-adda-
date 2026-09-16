@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { createBrowserClient } from "@supabase/ssr";
-import { KDSTicketData, TicketCard } from "./TicketCard";
+import { SessionTicketCard } from "./SessionTicketCard";
 import { KDSControls, FilterTab } from "./KDSControls";
 import { playOrderChime } from "@/lib/audio/chime";
 import { updateOrderStatus } from "@/actions/kitchen";
@@ -16,6 +16,9 @@ interface KDSBoardProps {
 export function KDSBoard({ initialOrders, restaurantId }: KDSBoardProps) {
   const [orders, setOrders] = useState<KDSTicketData[]>(initialOrders);
   const [filter, setFilter] = useState<FilterTab>("active");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [sortOrder, setSortOrder] = useState<"oldest" | "newest">("oldest");
+  const [tableFilter, setTableFilter] = useState("all");
   const [isAudioEnabled, setIsAudioEnabled] = useState(false);
   const [connectionState, setConnectionState] = useState<"connected" | "reconnecting" | "offline">("connected");
 
@@ -25,7 +28,6 @@ export function KDSBoard({ initialOrders, restaurantId }: KDSBoardProps) {
   );
 
   useEffect(() => {
-    // Enable audio after first interaction to bypass autoplay policies
     const enableAudio = () => {
       setIsAudioEnabled(true);
       window.removeEventListener("pointerdown", enableAudio);
@@ -35,7 +37,8 @@ export function KDSBoard({ initialOrders, restaurantId }: KDSBoardProps) {
   }, []);
 
   useEffect(() => {
-    const channel = supabase.channel(`kds_orders_${restaurantId}`);
+    const channelName = `kds_orders_${restaurantId}_${Math.random().toString(36).substring(7)}`;
+    const channel = supabase.channel(channelName);
 
     channel
       .on(
@@ -48,11 +51,9 @@ export function KDSBoard({ initialOrders, restaurantId }: KDSBoardProps) {
         },
         async (payload) => {
           if (payload.eventType === "INSERT") {
-            // New order received
-            // We need to fetch the order items since they are not in the payload
             const { data: newOrderData } = await supabase
               .from("orders")
-              .select("*, order_items(*, menu_items(name))")
+              .select("*, table_sessions(receipt_number), order_items(*, menu_items(name))")
               .eq("id", payload.new.id)
               .single();
 
@@ -86,18 +87,31 @@ export function KDSBoard({ initialOrders, restaurantId }: KDSBoardProps) {
   }, [supabase, restaurantId, isAudioEnabled]);
 
   const handleUpdateStatus = async (orderId: string, newStatus: OrderStatus) => {
-    // Optimistic UI update
     setOrders((prev) =>
       prev.map((o) => (o.id === orderId ? { ...o, status: newStatus } : o))
     );
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+     
     const result = await updateOrderStatus({ orderId, status: newStatus as any });
     
     if (!result.success) {
-      // Revert if failed (requires a full re-fetch in reality, but we simplify here)
-      // For a robust implementation, we would store the old status
       alert(`Failed to update ticket: ${result.error}`);
+    }
+  };
+
+  const handleUpdateItemStatus = async (itemId: string, newStatus: 'pending' | 'in_kitchen' | 'ready' | 'served') => {
+    setOrders((prev) =>
+      prev.map((o) => ({
+        ...o,
+        order_items: o.order_items.map((i) => (i.id === itemId ? { ...i, status: newStatus } : i))
+      }))
+    );
+
+    const { updateOrderItemStatus } = await import("@/actions/kitchen");
+    const result = await updateOrderItemStatus(itemId, newStatus);
+    
+    if (!result.success) {
+      alert(`Failed to update item: ${result.error}`);
     }
   };
 
@@ -118,15 +132,55 @@ export function KDSBoard({ initialOrders, restaurantId }: KDSBoardProps) {
     })
     .sort((a, b) => new Date(a.placed_at).getTime() - new Date(b.placed_at).getTime());
 
+  // Group by session
+  const groupedOrders = visibleOrders.reduce((acc, order) => {
+    const key = order.session_id ? `session-${order.session_id}` : `order-${order.id}`;
+    if (!acc[key]) acc[key] = [];
+    acc[key].push(order);
+    return acc;
+  }, {} as Record<string, KDSTicketData[]>);
+
+  const availableTables = Array.from(new Set(visibleOrders.map(o => o.table_number).filter(Boolean))) as string[];
+  // Sort alphabetically or numerically
+  availableTables.sort((a, b) => {
+    const numA = parseInt(a);
+    const numB = parseInt(b);
+    if (!isNaN(numA) && !isNaN(numB)) return numA - numB;
+    return a.localeCompare(b);
+  });
+
+  const q = searchQuery.toLowerCase().trim();
+  const sessionGroups = Object.values(groupedOrders)
+    .filter(group => {
+      const first = group[0];
+      
+      // Table Filter
+      if (tableFilter === "takeaway" && first.table_number) return false;
+      if (tableFilter !== "all" && tableFilter !== "takeaway" && first.table_number !== tableFilter) return false;
+
+      // Search Query
+      if (!q) return true;
+      const matchTable = first.table_number?.toLowerCase().includes(q);
+      const matchSession = first.session_id?.toLowerCase().includes(q);
+      const matchReceipt = first.table_sessions?.receipt_number ? String(first.table_sessions.receipt_number).includes(q) : false;
+      const matchOrderHash = group.some(o => o.id.toLowerCase().includes(q));
+      const matchTicketNo = group.some(o => o.ticket_number ? String(o.ticket_number).includes(q) : false);
+      return matchTable || matchSession || matchReceipt || matchOrderHash || matchTicketNo;
+    })
+    .sort((a, b) => {
+      const aTime = Math.min(...a.map(o => new Date(o.placed_at).getTime()));
+      const bTime = Math.min(...b.map(o => new Date(o.placed_at).getTime()));
+      return sortOrder === "oldest" ? aTime - bTime : bTime - aTime;
+    });
+
   return (
     <div className="flex flex-col h-full relative">
-      {/* Absolute connection indicator */}
       <div className="absolute -top-12 right-0 flex items-center gap-2">
         <div className={`w-2.5 h-2.5 rounded-full ${
           connectionState === 'connected' ? 'bg-emerald-500' :
           connectionState === 'reconnecting' ? 'bg-amber-500 animate-pulse' : 'bg-rose-500'
         }`} />
-        <span className="text-xs text-slate-400 font-medium uppercase tracking-wider">
+        <span className="text-xs text-gray-500 font-medium uppercase tracking-wider">
           {connectionState}
         </span>
       </div>
@@ -134,22 +188,30 @@ export function KDSBoard({ initialOrders, restaurantId }: KDSBoardProps) {
       <KDSControls
         currentTab={filter}
         onTabChange={setFilter}
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
+        sortOrder={sortOrder}
+        onSortChange={setSortOrder}
+        tableFilter={tableFilter}
+        onTableFilterChange={setTableFilter}
+        availableTables={availableTables}
         counts={counts}
         isAudioEnabled={isAudioEnabled}
         onToggleAudio={() => setIsAudioEnabled((prev) => !prev)}
       />
 
-      <div className="flex-1 overflow-x-auto pb-4">
-        <div className="flex gap-4 items-start w-max min-w-full">
-          {visibleOrders.map((order) => (
-            <TicketCard
-              key={order.id}
-              ticket={order}
+      <div className="flex-1 overflow-y-auto pb-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 items-start">
+          {sessionGroups.map((groupOrders) => (
+            <SessionTicketCard
+              key={groupOrders[0].session_id || groupOrders[0].id}
+              orders={groupOrders}
               onUpdateStatus={handleUpdateStatus}
+              onUpdateItemStatus={handleUpdateItemStatus}
             />
           ))}
-          {visibleOrders.length === 0 && (
-            <div className="w-full h-40 flex items-center justify-center text-slate-500 italic">
+          {sessionGroups.length === 0 && (
+            <div className="col-span-full h-40 flex items-center justify-center text-gray-500 italic">
               No tickets in this view.
             </div>
           )}

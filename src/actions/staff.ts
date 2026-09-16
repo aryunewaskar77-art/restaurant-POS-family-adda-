@@ -40,7 +40,7 @@ export type { PosSessionPayload };
 type RpcArgs = Record<string, unknown>;
 type RpcResult<T> = Promise<{ data: T | null; error: { message: string } | null }>;
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+ 
 async function callRpc<T = unknown>(supabase: any, fnName: string, args: RpcArgs): RpcResult<T> {
   return supabase.rpc(fnName, args);
 }

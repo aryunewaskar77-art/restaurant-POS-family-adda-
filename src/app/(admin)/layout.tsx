@@ -30,6 +30,12 @@ export default async function AdminLayout({
                 Dashboard
               </Link>
               <Link
+                href="/admin/tables"
+                className="px-3 py-2 rounded-md hover:bg-brand-800 transition-colors text-sm font-medium"
+              >
+                Live Floor
+              </Link>
+              <Link
                 href="/admin/menu"
                 className="px-3 py-2 rounded-md hover:bg-brand-800 transition-colors text-sm font-medium"
               >
@@ -51,21 +57,20 @@ export default async function AdminLayout({
           )}
 
           {(session?.role === 'admin' || session?.role === 'kitchen') && (
-            <Link
-              href="/admin/pantry"
-              className="px-3 py-2 rounded-md hover:bg-brand-800 transition-colors text-sm font-medium"
-            >
-              Pantry Management
-            </Link>
-          )}
-          
-          {session?.role === 'kitchen' && (
-            <Link
-              href="/kitchen"
-              className="px-3 py-2 rounded-md hover:bg-brand-800 transition-colors text-sm font-medium text-emerald-400"
-            >
-              Open Kitchen Display ↗
-            </Link>
+            <>
+              <Link
+                href="/admin/kitchen"
+                className="px-3 py-2 rounded-md hover:bg-brand-800 transition-colors text-sm font-medium"
+              >
+                Kitchen Display
+              </Link>
+              <Link
+                href="/admin/pantry"
+                className="px-3 py-2 rounded-md hover:bg-brand-800 transition-colors text-sm font-medium"
+              >
+                Pantry Management
+              </Link>
+            </>
           )}
         </nav>
 

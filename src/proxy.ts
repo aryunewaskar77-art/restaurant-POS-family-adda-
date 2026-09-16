@@ -14,11 +14,10 @@ export async function proxy(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Intercept /admin and /kitchen routes
+  // Intercept /admin routes (including kitchen which is now /admin/kitchen)
   const isAdminRoute = pathname.startsWith("/admin");
-  const isKitchenRoute = pathname.startsWith("/kitchen");
 
-  if (isAdminRoute || isKitchenRoute) {
+  if (isAdminRoute) {
     const sessionCookie = request.cookies.get("pos_session");
 
     if (!sessionCookie || !sessionCookie.value) {
@@ -33,21 +32,24 @@ export async function proxy(request: NextRequest) {
       const session = JSON.parse(payloadString);
       const role = session.role;
 
-      if (isAdminRoute) {
-        if (role !== "admin" && role !== "manager") {
-          // If they are cashier/kitchen trying to access admin, send them to their own area or unauthorized
-          const url = request.nextUrl.clone();
-          url.pathname = role === "kitchen" ? "/kitchen" : "/unauthorized";
-          return NextResponse.redirect(url);
+      // Kitchen staff CAN access pantry and kitchen
+      if (role === 'kitchen') {
+        if (pathname.startsWith('/admin/pantry') || pathname.startsWith('/admin/kitchen')) {
+          return NextResponse.next();
         }
-      } else if (isKitchenRoute) {
-        // Kitchen permits kitchen, admin, manager
-        if (role !== "kitchen" && role !== "admin" && role !== "manager") {
-          const url = request.nextUrl.clone();
-          url.pathname = "/unauthorized";
-          return NextResponse.redirect(url);
-        }
+        // Redirect unauthorized access to their home base
+        const url = request.nextUrl.clone();
+        url.pathname = "/admin/kitchen";
+        return NextResponse.redirect(url);
       }
+
+      // Admin and Manager can access everything in /admin
+      if (role !== "admin" && role !== "manager") {
+        const url = request.nextUrl.clone();
+        url.pathname = "/unauthorized";
+        return NextResponse.redirect(url);
+      }
+
     } catch {
       // Unparseable session cookie
       const url = request.nextUrl.clone();
@@ -55,6 +57,13 @@ export async function proxy(request: NextRequest) {
       url.searchParams.set("from", pathname);
       return NextResponse.redirect(url);
     }
+  }
+
+  // Redirect legacy /kitchen to /admin/kitchen
+  if (pathname.startsWith("/kitchen")) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/admin/kitchen";
+    return NextResponse.redirect(url);
   }
 
   return NextResponse.next();

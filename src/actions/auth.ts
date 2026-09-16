@@ -37,7 +37,7 @@ export async function loginWithPin(pin: string) {
   
   const supabase = await createClient();
   
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   const { data, error } = await (supabase as any).rpc("verify_staff_pin", {
     p_restaurant_id: restaurantId,
     p_pin: result.data.pin

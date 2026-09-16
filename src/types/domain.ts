@@ -178,6 +178,31 @@ export interface UpdateOrderStatusPayload {
 }
 
 // ---------------------------------------------------------------------------
+// Table Session Types (Phase 3)
+// ---------------------------------------------------------------------------
+
+export type SessionStatus = 'active' | 'bill_requested' | 'paid' | 'abandoned';
+export type PaymentMethod = 'cash' | 'upi' | 'card';
+
+export interface TableSessionSummary {
+  sessionId: string;
+  tableIdentifier: string;
+  status: SessionStatus;
+  startedAt: string;
+  subtotal: number;
+  tax: number;
+  total: number;
+  orderCount: number;
+  orders: {
+    id: string;
+    placedAt: string;
+    status: string;
+    total: number;
+    items: { name: string; quantity: number; unitPrice: number }[];
+  }[];
+}
+
+// ---------------------------------------------------------------------------
 // UI / Display Types
 // ---------------------------------------------------------------------------
 

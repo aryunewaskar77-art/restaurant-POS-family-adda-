@@ -25,7 +25,8 @@ export default async function DineInMenuPage({
     );
   }
 
-  // Next.js 15+ needs await for params, so we mapped it correctly.
-  
-  return <MenuClient tableId={tableId} categories={categories} />;
+  const { getActiveSessionForTable } = await import("@/actions/settlement");
+  const { session } = await getActiveSessionForTable(tableId);
+
+  return <MenuClient tableId={tableId} categories={categories} initialSession={session} />;
 }

@@ -14,7 +14,7 @@ interface PantryItem {
   updated_at: string;
 }
 
-export function PantryManagerClient({ initialItems, restaurantId }: { initialItems: PantryItem[], restaurantId: string }) {
+export function PantryManagerClient({ initialItems }: { initialItems: PantryItem[] }) {
   const [items, setItems] = useState<PantryItem[]>(initialItems);
   const [search, setSearch] = useState("");
   const [activeCategory, setActiveCategory] = useState<string>("All");

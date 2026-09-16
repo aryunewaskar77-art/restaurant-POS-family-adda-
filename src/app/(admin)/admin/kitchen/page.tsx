@@ -9,7 +9,7 @@ export default async function KitchenDisplayPage() {
   // We fetch pending, in_kitchen, ready, and recently completed
   const { data: orders, error } = await supabase
     .from("orders")
-    .select("id, table_number, status, placed_at, order_items(id, quantity, notes, menu_items(name))")
+    .select("id, session_id, table_number, status, total, placed_at, ticket_number, table_sessions(receipt_number), order_items(id, quantity, notes, status, total_price, menu_items(name))")
     .eq("restaurant_id", restaurantId)
     .in("status", ["pending", "in_kitchen", "ready", "completed", "voided", "cancelled"])
     .order("placed_at", { ascending: true })
@@ -18,7 +18,7 @@ export default async function KitchenDisplayPage() {
   if (error) {
     console.error("Failed to load kitchen orders:", JSON.stringify(error, null, 2) || error.message || error);
     return (
-      <div className="flex h-full items-center justify-center text-slate-400">
+      <div className="flex h-full items-center justify-center text-gray-500">
         Error loading initial tickets.
       </div>
     );

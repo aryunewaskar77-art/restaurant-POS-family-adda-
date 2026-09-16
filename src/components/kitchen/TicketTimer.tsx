@@ -35,13 +35,13 @@ export function TicketTimer({ placedAt, status }: TicketTimerProps) {
   const formattedMinutes = minutes.toString().padStart(2, "0");
   const formattedSeconds = seconds.toString().padStart(2, "0");
 
-  let colorClass = "text-slate-400"; // < 10 mins
+  let colorClass = "text-gray-500"; // < 10 mins
 
   if (status !== "completed" && status !== "voided" && status !== "cancelled") {
     if (minutes >= 20) {
-      colorClass = "text-rose-400 bg-rose-950/40 border border-rose-800 animate-pulse px-2 py-0.5 rounded";
+      colorClass = "text-rose-700 bg-rose-50 border border-rose-300 animate-pulse px-2 py-0.5 rounded";
     } else if (minutes >= 10) {
-      colorClass = "text-amber-400 bg-amber-950/40 border border-amber-800 px-2 py-0.5 rounded";
+      colorClass = "text-amber-700 bg-amber-50 border border-amber-300 px-2 py-0.5 rounded";
     }
   }
 

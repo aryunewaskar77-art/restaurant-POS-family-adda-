@@ -14,22 +14,16 @@ export default function Home() {
             </span>
           </div>
           <nav className="hidden sm:flex items-center gap-6 text-sm font-medium text-gray-600">
-            <Link href="/order/1" className="hover:text-brand-600 transition-colors">
+            <Link href="/admin/menu" className="hover:text-brand-600 transition-colors">
               Menu
             </Link>
             <Link href="/admin" className="hover:text-brand-600 transition-colors">
               Admin
             </Link>
-            <Link href="/kitchen" className="hover:text-brand-600 transition-colors">
+            <Link href="/admin/kitchen" className="hover:text-brand-600 transition-colors">
               Kitchen
             </Link>
           </nav>
-          <Link
-            href="/order/1"
-            className="bg-brand-600 text-white text-sm font-semibold px-4 py-2 rounded-lg hover:bg-brand-700 transition-colors"
-          >
-            Order Now
-          </Link>
         </div>
       </header>
 
@@ -42,7 +36,7 @@ export default function Home() {
           </span>
 
           <h1 className="text-5xl sm:text-6xl font-extrabold text-gray-900 leading-tight max-w-3xl">
-            Fresh food, <span className="text-brand-600">straight</span> from our kitchen
+            We serve <span className="text-brand-600">What</span> we Eat
           </h1>
 
           <p className="text-lg text-gray-500 max-w-xl">
@@ -52,13 +46,13 @@ export default function Home() {
 
           <div className="flex flex-col sm:flex-row gap-3 mt-2">
             <Link
-              href="/order/1"
+              href="/admin/menu"
               className="bg-brand-600 text-white font-semibold px-8 py-3 rounded-xl hover:bg-brand-700 transition-colors shadow-sm"
             >
               Browse Menu
             </Link>
             <Link
-              href="/kitchen"
+              href="/admin/kitchen"
               className="border border-brand-200 text-brand-700 font-semibold px-8 py-3 rounded-xl hover:bg-brand-50 transition-colors"
             >
               Kitchen Display →
@@ -73,14 +67,14 @@ export default function Home() {
               icon: "📋",
               title: "Live Menu",
               desc: "Real-time availability — items marked unavailable disappear instantly.",
-              href: "/order/1",
+              href: "/order/preview",
               cta: "View Menu",
             },
             {
               icon: "🧑‍🍳",
               title: "Kitchen Display",
               desc: "Kitchen staff see new orders the moment they come in — no paper tickets.",
-              href: "/kitchen",
+              href: "/admin/kitchen",
               cta: "Open KDS",
             },
             {

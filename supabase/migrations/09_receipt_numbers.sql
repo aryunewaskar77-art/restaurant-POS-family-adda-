@@ -1,0 +1,2 @@
+ALTER TABLE table_sessions ADD COLUMN IF NOT EXISTS receipt_number SERIAL;
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS ticket_number SERIAL;

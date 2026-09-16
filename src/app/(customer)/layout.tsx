@@ -17,7 +17,7 @@ export default function CustomerLayout({
               <span className="font-bold text-brand-800 tracking-tight">Family Adda</span>
             </div>
           </header>
-          <main className="flex-1 overflow-y-auto pb-24">
+          <main className="flex-1 pb-24">
             {children}
           </main>
         </div>

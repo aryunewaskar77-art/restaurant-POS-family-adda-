@@ -41,8 +41,9 @@ function OrderStatusTracker({ tableId }: { tableId: string }) {
 
     fetchInitial();
 
+    const channelName = `order_updates_${orderId}_${Math.random().toString(36).substring(7)}`;
     const channel = supabase
-      .channel(`order_updates_${orderId}`)
+      .channel(channelName)
       .on(
         "postgres_changes",
         {

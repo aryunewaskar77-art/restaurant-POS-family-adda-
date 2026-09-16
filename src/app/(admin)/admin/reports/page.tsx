@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+ 
 import { createClient } from "@/lib/supabase/server";
 import { getShiftMetrics } from "@/actions/admin";
 import { SalesChart } from "@/components/admin/SalesChart";

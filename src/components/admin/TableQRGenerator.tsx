@@ -16,7 +16,7 @@ export default function TableQRGenerator({ totalTables = 20 }: { totalTables?: n
   useEffect(() => {
     // Detect host origin dynamically in the browser
     const origin = window.location.origin;
-    setBaseUrl(origin);
+    Promise.resolve().then(() => setBaseUrl(origin));
 
     async function generateQRCodes() {
       const generated: TableQR[] = [];
@@ -25,6 +25,7 @@ export default function TableQRGenerator({ totalTables = 20 }: { totalTables?: n
         const dataUrl = await QRCode.toDataURL(tableUrl, {
           width: 300,
           margin: 2,
+          errorCorrectionLevel: 'H', // High error correction to allow logo overlay
           color: {
             dark: '#14532d', // Brand dark green (tailwind brand-900)
             light: '#ffffff',
@@ -65,22 +66,28 @@ export default function TableQRGenerator({ totalTables = 20 }: { totalTables?: n
             key={table.tableNumber}
             className="border-2 border-slate-200 rounded-xl p-4 flex flex-col items-center justify-center bg-white shadow-sm print:shadow-none print:border-black print:break-inside-avoid"
           >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img 
-              src="/logo.jpg" 
-              alt="Family Adda Logo" 
-              className="w-16 h-16 rounded-full mb-2 object-cover border border-slate-200"
-            />
+            <span className="text-xs uppercase tracking-widest text-slate-400 font-semibold mb-1">
+              Family Adda
+            </span>
             <span className="text-2xl font-black text-brand-700 mb-2">
               Table {table.tableNumber}
             </span>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={table.qrDataUrl}
-              alt={`QR for Table ${table.tableNumber}`}
-              className="w-44 h-44 rounded-lg"
-            />
-            <p className="text-xs text-slate-500 mt-2 font-medium">Scan to order & pay</p>
+            <div className="relative w-44 h-44 mb-2">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={table.qrDataUrl}
+                alt={`QR for Table ${table.tableNumber}`}
+                className="w-full h-full rounded-lg"
+              />
+              {/* Overlay Logo in Center */}
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img 
+                src="/logo.jpg" 
+                alt="Logo" 
+                className="absolute inset-0 m-auto w-12 h-12 rounded-full border-2 border-white shadow-sm object-cover bg-white"
+              />
+            </div>
+            <p className="text-xs text-slate-500 font-medium">Scan to order & pay</p>
           </div>
         ))}
       </div>

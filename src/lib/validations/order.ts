@@ -20,3 +20,10 @@ export const CancelOrderSchema = z.object({
 });
 export type CancelOrderInput = z.infer<typeof CancelOrderSchema>;
 
+export const SettleSessionSchema = z.object({
+  sessionId: z.string().uuid('Invalid session ID'),
+  paymentMethod: z.enum(['cash', 'upi', 'card']),
+  paymentReference: z.string().max(100).optional(),
+});
+export type SettleSessionInput = z.infer<typeof SettleSessionSchema>;
+

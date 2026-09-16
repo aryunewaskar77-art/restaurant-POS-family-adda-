@@ -42,7 +42,7 @@ type RpcArgs = Record<string, unknown>;
 type RpcResult<T> = Promise<{ data: T | null; error: { message: string } | null }>;
 
 async function callRpc<T = unknown>(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   supabase: any,
   fnName: string,
   args: RpcArgs
