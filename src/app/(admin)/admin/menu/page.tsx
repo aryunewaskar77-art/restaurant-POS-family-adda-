@@ -1,0 +1,34 @@
+import { createClient } from "@/lib/supabase/server";
+import { MenuManagerClient } from "@/components/admin/MenuManagerClient";
+
+export default async function AdminMenuPage() {
+  const supabase = await createClient();
+  const restaurantId = process.env.NEXT_PUBLIC_DEFAULT_RESTAURANT_ID!;
+
+  // Fetch categories
+  const { data: categories, error: catError } = await supabase
+    .from("categories")
+    .select("id, name")
+    .eq("restaurant_id", restaurantId)
+    .order("sort_order");
+
+  // Fetch menu items
+  const { data: menuItems, error: itemError } = await supabase
+    .from("menu_items")
+    .select("id, name, price, is_available, category_id")
+    .eq("restaurant_id", restaurantId)
+    .order("name");
+
+  if (catError || itemError) {
+    return <div className="text-red-500">Error loading catalog.</div>;
+  }
+
+  return (
+    <div className="max-w-5xl mx-auto space-y-6">
+      <h1 className="text-3xl font-extrabold text-brand-900 tracking-tight">Menu Catalog</h1>
+      <p className="text-gray-500 mb-8">Manage pricing and instantly 86 (hide) items from the customer menu.</p>
+      
+      <MenuManagerClient categories={categories || []} menuItems={menuItems || []} />
+    </div>
+  );
+}

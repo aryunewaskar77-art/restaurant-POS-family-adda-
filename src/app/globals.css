@@ -1,24 +1,51 @@
 @import "tailwindcss";
 
+/* ============================================================
+   CSS Custom Properties — Light / Dark Mode Base
+   ============================================================ */
 :root {
   --background: #ffffff;
   --foreground: #171717;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --background: #052e16; /* brand-950 for dark mode backgrounds */
+    --foreground: #f0fdf4; /* brand-50 for dark mode text */
   }
 }
 
+/* ============================================================
+   Tailwind v4 Theme — CSS-first configuration
+   All tokens defined here are available as Tailwind utilities,
+   e.g. bg-brand-500, text-brand-700, border-brand-200.
+   ============================================================ */
+@theme inline {
+  /* Semantic aliases */
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+
+  /* Typography */
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+
+  /* ─── Brand Green Palette ───────────────────────────────── */
+  --color-brand-50:  #f0fdf4;
+  --color-brand-100: #dcfce7;
+  --color-brand-200: #bbf7d0;
+  --color-brand-300: #86efac;
+  --color-brand-400: #4ade80;
+  --color-brand-500: #22c55e;
+  --color-brand-600: #16a34a; /* Primary action color */
+  --color-brand-700: #15803d;
+  --color-brand-800: #166534;
+  --color-brand-900: #14532d;
+  --color-brand-950: #052e16;
+}
+
+/* ============================================================
+   Base Styles
+   ============================================================ */
 body {
   background: var(--background);
   color: var(--foreground);
