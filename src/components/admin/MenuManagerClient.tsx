@@ -22,7 +22,8 @@ interface MenuManagerProps {
   isEditUnlocked: boolean;
 }
 
-export function MenuManagerClient({ categories, menuItems: initialItems, isEditUnlocked }: MenuManagerProps) {
+export function MenuManagerClient({ categories: initialCategories, menuItems: initialItems, isEditUnlocked }: MenuManagerProps) {
+  const [categories, setCategories] = useState<Category[]>(initialCategories);
   const [items, setItems] = useState<MenuItem[]>(initialItems);
   const [search, setSearch] = useState("");
   const [activeTab, setActiveTab] = useState<string>("all");
@@ -113,7 +114,7 @@ export function MenuManagerClient({ categories, menuItems: initialItems, isEditU
     setIsSubmittingCategory(false);
 
     if (result.success && result.category) {
-      setCategories((prev) => [...prev, result.category as Category]);
+      setCategories((prev: any) => [...prev, result.category as Category]);
       setIsAddingCategory(false);
       setNewCategoryName("");
     } else {

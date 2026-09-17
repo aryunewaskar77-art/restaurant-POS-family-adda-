@@ -15,7 +15,7 @@ export async function verifySectionPin(pin: string, section: string) {
     .eq("is_active", true)
     .single();
 
-  if (!data || data.role !== "admin") {
+  if (!data || (data as any)?.role !== "admin") {
     return { success: false, error: "Invalid PIN or insufficient permissions." };
   }
 

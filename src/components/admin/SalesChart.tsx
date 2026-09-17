@@ -49,7 +49,7 @@ export function SalesChart({ data }: { data: { date: string, revenue: number, or
             tick={{ fill: '#6B7280', fontSize: 12 }}
           />
           <Tooltip 
-            formatter={(value: number) => [`₹${value}`, 'Revenue']}
+            formatter={(value: any) => [`₹${value}`, 'Revenue']}
             labelStyle={{ color: '#111827', fontWeight: 'bold' }}
             contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
           />

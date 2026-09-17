@@ -64,7 +64,7 @@ export default async function AdminReportsPage(props: any) {
   for (let i = 10; i <= 22; i++) {
     // Deterministic pseudo-random based on hour to satisfy linter
     const fakeRandom = (i % 3) * 0.1 - 0.1; 
-    const val = (i <= currentHour && success && metrics) ? (metrics.grossRevenue / (currentHour - 9 + 1)) * (1 + fakeRandom) : 0;
+    const val = (i <= currentHour && success && metrics) ? ((metrics?.grossRevenue || 0) / (currentHour - 9 + 1)) * (1 + fakeRandom) : 0;
     todayChartData.push({ date: `${i}:00`, revenue: val, orders: 0 });
   }
 
@@ -75,7 +75,7 @@ export default async function AdminReportsPage(props: any) {
   if (filter === "month") {
     chartTitle = "Revenue Trend (This Month)";
     for (let i = 1; i <= 4; i++) {
-      const rev = (i === 4 && success && metrics) ? metrics.grossRevenue * 2 : (i === 3 ? metrics.grossRevenue * 1.5 : 0);
+      const rev = (i === 4 && success && metrics) ? (metrics?.grossRevenue || 0) * 2 : (i === 3 ? (metrics?.grossRevenue || 0) * 1.5 : 0);
       chartData.push({ date: `Week ${i}`, revenue: rev, orders: 0 });
     }
   } else if (filter === "year") {
@@ -83,14 +83,14 @@ export default async function AdminReportsPage(props: any) {
     const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
     const currentMonth = new Date().getMonth();
     months.forEach((m, idx) => {
-      const rev = (idx === currentMonth && success && metrics) ? metrics.grossRevenue * 8 : (idx === currentMonth - 1 ? metrics.grossRevenue * 7 : 0);
+      const rev = (idx === currentMonth && success && metrics) ? (metrics?.grossRevenue || 0) * 8 : (idx === currentMonth - 1 ? (metrics?.grossRevenue || 0) * 7 : 0);
       chartData.push({ date: m, revenue: rev, orders: 0 });
     });
   } else if (specificDate) {
     chartTitle = `Revenue Trend (${specificDate})`;
     for (let i = 10; i <= 22; i++) {
       const isToday = new Date(specificDate).toDateString() === new Date().toDateString();
-      const val = (isToday && i === new Date().getHours() && success && metrics) ? metrics.grossRevenue : 0;
+      const val = (isToday && i === new Date().getHours() && success && metrics) ? (metrics?.grossRevenue || 0) : 0;
       chartData.push({ date: `${i}:00`, revenue: val, orders: 0 });
     }
   } else {
@@ -103,7 +103,7 @@ export default async function AdminReportsPage(props: any) {
       let rev = 0;
       let ord = 0;
       if (i === todayIndex && success && metrics) {
-        rev = metrics.grossRevenue;
+        rev = (metrics?.grossRevenue || 0);
         ord = metrics.orderCount;
       }
       chartData.push({ date: days[i], revenue: rev, orders: ord });
@@ -121,7 +121,7 @@ export default async function AdminReportsPage(props: any) {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
             <div className="text-sm font-semibold text-gray-500 mb-1">Gross Revenue</div>
-            <div className="text-3xl font-bold text-brand-700">{formatPrice(metrics.grossRevenue)}</div>
+            <div className="text-3xl font-bold text-brand-700">{formatPrice((metrics?.grossRevenue || 0))}</div>
             <div className="text-xs text-gray-400 mt-2">Incl. 5% Tax</div>
           </div>
           <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">

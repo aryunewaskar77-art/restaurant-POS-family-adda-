@@ -12,7 +12,7 @@ import {
 
 const COLORS = ["#10B981", "#3B82F6", "#F59E0B", "#EF4444", "#8B5CF6", "#EC4899"];
 
-export function PantryChart({ data }: { data: { name: string, value: number }[] }) {
+export function PantryChart({ data }: { data: { name: string, value: any }[] }) {
   return (
     <div className="w-full h-[250px]">
       <ResponsiveContainer width="100%" height="100%">
@@ -31,7 +31,7 @@ export function PantryChart({ data }: { data: { name: string, value: number }[] 
             ))}
           </Pie>
           <Tooltip 
-            formatter={(value: number) => [value, "Projected Restock (Units)"]}
+            formatter={(value: any) => [value, "Projected Restock (Units)"]}
             labelStyle={{ color: "#111827", fontWeight: "bold" }}
             contentStyle={{ borderRadius: "8px", border: "none", boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)" }}
           />

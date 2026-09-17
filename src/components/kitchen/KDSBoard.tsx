@@ -7,6 +7,7 @@ import { KDSControls, FilterTab } from "./KDSControls";
 import { playOrderChime } from "@/lib/audio/chime";
 import { updateOrderStatus } from "@/actions/kitchen";
 import type { OrderStatus } from "@/types/database.types";
+import { KDSTicketData } from "./TicketCard";
 
 interface KDSBoardProps {
   initialOrders: KDSTicketData[];
@@ -103,7 +104,7 @@ export function KDSBoard({ initialOrders, restaurantId }: KDSBoardProps) {
     setOrders((prev) =>
       prev.map((o) => ({
         ...o,
-        order_items: o.order_items.map((i) => (i.id === itemId ? { ...i, status: newStatus } : i))
+        order_items: o.order_items.map((i: any) => (i.id === itemId ? { ...i, status: newStatus } : i))
       }))
     );
 
@@ -152,7 +153,7 @@ export function KDSBoard({ initialOrders, restaurantId }: KDSBoardProps) {
   const q = searchQuery.toLowerCase().trim();
   const sessionGroups = Object.values(groupedOrders)
     .filter(group => {
-      const first = group[0];
+      const first = (group as any)[0];
       
       // Table Filter
       if (tableFilter === "takeaway" && first.table_number) return false;
@@ -163,13 +164,13 @@ export function KDSBoard({ initialOrders, restaurantId }: KDSBoardProps) {
       const matchTable = first.table_number?.toLowerCase().includes(q);
       const matchSession = first.session_id?.toLowerCase().includes(q);
       const matchReceipt = first.table_sessions?.receipt_number ? String(first.table_sessions.receipt_number).includes(q) : false;
-      const matchOrderHash = group.some(o => o.id.toLowerCase().includes(q));
-      const matchTicketNo = group.some(o => o.ticket_number ? String(o.ticket_number).includes(q) : false);
+      const matchOrderHash = (group as any[]).some((o: any) => o.id.toLowerCase().includes(q));
+      const matchTicketNo = (group as any[]).some((o: any) => o.ticket_number ? String(o.ticket_number).includes(q) : false);
       return matchTable || matchSession || matchReceipt || matchOrderHash || matchTicketNo;
     })
     .sort((a, b) => {
-      const aTime = Math.min(...a.map(o => new Date(o.placed_at).getTime()));
-      const bTime = Math.min(...b.map(o => new Date(o.placed_at).getTime()));
+      const aTime = Math.min(...(a as any[]).map((o: any) => new Date(o.placed_at).getTime()));
+      const bTime = Math.min(...(b as any[]).map((o: any) => new Date(o.placed_at).getTime()));
       return sortOrder === "oldest" ? aTime - bTime : bTime - aTime;
     });
 
@@ -204,8 +205,8 @@ export function KDSBoard({ initialOrders, restaurantId }: KDSBoardProps) {
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 items-start">
           {sessionGroups.map((groupOrders) => (
             <SessionTicketCard
-              key={groupOrders[0].session_id || groupOrders[0].id}
-              orders={groupOrders}
+              key={(groupOrders as any)[0].session_id || (groupOrders as any)[0].id}
+              orders={groupOrders as any}
               onUpdateStatus={handleUpdateStatus}
               onUpdateItemStatus={handleUpdateItemStatus}
             />
