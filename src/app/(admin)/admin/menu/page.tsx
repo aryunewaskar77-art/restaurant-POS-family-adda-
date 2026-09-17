@@ -1,7 +1,12 @@
 import { createClient } from "@/lib/supabase/server";
 import { MenuManagerClient } from "@/components/admin/MenuManagerClient";
+import { cookies } from "next/headers";
+import { UnlockEditingBanner } from "@/components/admin/UnlockEditingBanner";
 
 export default async function AdminMenuPage() {
+  const cookieStore = await cookies();
+  const isEditUnlocked = !!cookieStore.get("edit_mode_access");
+
   const supabase = await createClient();
   const restaurantId = process.env.NEXT_PUBLIC_DEFAULT_RESTAURANT_ID!;
 
@@ -28,7 +33,9 @@ export default async function AdminMenuPage() {
       <h1 className="text-3xl font-extrabold text-brand-900 tracking-tight">Menu Catalog</h1>
       <p className="text-gray-500 mb-8">Manage pricing and instantly 86 (hide) items from the customer menu.</p>
       
-      <MenuManagerClient categories={categories || []} menuItems={menuItems || []} />
+      <UnlockEditingBanner isUnlocked={isEditUnlocked} />
+      
+      <MenuManagerClient categories={categories || []} menuItems={menuItems || []} isEditUnlocked={isEditUnlocked} />
     </div>
   );
 }

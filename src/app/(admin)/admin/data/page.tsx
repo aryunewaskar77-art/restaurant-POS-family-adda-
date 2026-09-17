@@ -2,12 +2,20 @@ import React from "react";
 import { createClient } from "@/lib/supabase/server";
 import { runMonthlyArchive } from "@/actions/archival";
 import { revalidatePath } from "next/cache";
+import { cookies } from "next/headers";
+import { UnlockEditingBanner } from "@/components/admin/UnlockEditingBanner";
+import { ArchiveForm } from "./ArchiveForm";
 
 export const dynamic = "force-dynamic";
 
 export default async function DataManagementPage() {
+  const cookieStore = await cookies();
+  const isEditUnlocked = !!cookieStore.get("edit_mode_access");
+
   const supabase = await createClient();
   const restaurantId = process.env.NEXT_PUBLIC_DEFAULT_RESTAURANT_ID;
+
+  const savedRetention = cookieStore.get("archive_retention")?.value || "12";
 
    
   const { data: jobs } = await (supabase as any)
@@ -25,11 +33,17 @@ export default async function DataManagementPage() {
   async function triggerArchive(formData: FormData) {
     "use server";
     const month = formData.get("archive_month") as string;
-    const retention = parseInt(formData.get("retention") as string, 10);
+    const retentionStr = formData.get("retention") as string;
+    const retention = parseInt(retentionStr, 10);
     if (!month) return;
+    
+    const cookieStore = await cookies();
+    cookieStore.set("archive_retention", retentionStr);
+
     const res = await runMonthlyArchive(restaurantId!, `${month}-01`, retention);
     console.log("Archive Triggered:", res);
     revalidatePath("/admin/data");
+    return res;
   }
 
   return (
@@ -38,6 +52,8 @@ export default async function DataManagementPage() {
         <h1 className="text-3xl font-black text-gray-900 mb-2">Data Management</h1>
         <p className="text-gray-500">Manage database archival and backups.</p>
       </div>
+
+      <UnlockEditingBanner isUnlocked={isEditUnlocked} />
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
@@ -53,35 +69,7 @@ export default async function DataManagementPage() {
 
         <div className="bg-white p-6 rounded-2xl shadow-sm border border-brand-200 border-l-4 border-l-brand-600">
           <h2 className="text-lg font-bold text-gray-800 mb-4">Manual Archive</h2>
-          <form action={triggerArchive} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Target Month</label>
-              <input 
-                type="month" 
-                name="archive_month" 
-                required
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Retention Protection (Months)</label>
-              <input 
-                type="number" 
-                name="retention" 
-                defaultValue={12}
-                min={1}
-                required
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500"
-              />
-              <p className="text-xs text-gray-500 mt-1">Data newer than this many months cannot be archived.</p>
-            </div>
-            <button 
-              type="submit"
-              className="w-full bg-brand-600 text-white font-bold py-2 rounded-lg hover:bg-brand-700 transition-colors"
-            >
-              Trigger Archive & Delete
-            </button>
-          </form>
+          <ArchiveForm savedRetention={savedRetention} triggerArchive={triggerArchive} isEditUnlocked={isEditUnlocked} />
         </div>
       </div>
 

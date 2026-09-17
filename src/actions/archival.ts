@@ -21,7 +21,7 @@ function toCSV(data: any[]) {
   return [headers.join(","), ...rows].join("\n");
 }
 
-export async function runMonthlyArchive(restaurantId: string, archiveMonthDateStr: string, retentionMonths: number = 12) {
+export async function runMonthlyArchive(restaurantId: string, archiveMonthDateStr: string, retentionMonths: number = 6) {
   const supabase = supabaseAdmin;
   
   const cutoffDate = new Date();

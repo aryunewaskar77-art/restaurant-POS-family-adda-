@@ -1,177 +1,69 @@
-'use server';
+"use server";
+import { createClient } from "@/lib/supabase/server";
+import { revalidatePath } from "next/cache";
 
-/**
- * Staff Authentication Server Actions — Family Adda
- *
- * PIN-based staff authentication for the POS kiosk and kitchen display.
- *
- * Flow:
- *  1. Staff enters numeric PIN on the kiosk
- *  2. `verifyStaffPin` calls the `verify_staff_pin` Postgres RPC
- *     (timing-safe bcrypt comparison, server-side only)
- *  3. On success, `setStaffSession` writes a tamper-evident HTTP-only cookie
- *  4. All subsequent kitchen/admin actions read the cookie via `requireStaffSession`
- *
- * Security notes:
- *  - PINs never traverse the wire in clear text beyond the HTTPS POST body
- *  - The raw PIN is never logged or stored; only the bcrypt hash lives in DB
- *  - The RPC uses `crypt(p_pin, pin_hash)` for constant-time comparison
- *  - Brute-force protection should be added at the proxy/rate-limiter layer
- */
+export async function addStaffAction(formData: FormData) {
+  const name = formData.get("name") as string;
+  const role = formData.get("role") as string;
+  const phone = formData.get("phone") as string || null;
+  
+  const pin = "1234";
+  const { createHash } = await import("crypto");
+  const pin_hash = createHash("sha256").update(pin).digest("hex");
 
-import { redirect } from 'next/navigation';
-import { createClient } from '@/lib/supabase/server';
-import { VerifyStaffPinSchema, type VerifyStaffPinInput } from '@/lib/validations/staff';
-import {
-  setStaffSession,
-  clearStaffSession,
-  getStaffSession,
-  type PosSessionPayload,
-} from '@/lib/session';
-import type { ActionResult } from './orders';
-
-// Re-export PosSessionPayload for convenience
-export type { PosSessionPayload };
-
-// ---------------------------------------------------------------------------
-// Typed RPC helper (isolates `as any` at the supabase-js boundary)
-// ---------------------------------------------------------------------------
-
-type RpcArgs = Record<string, unknown>;
-type RpcResult<T> = Promise<{ data: T | null; error: { message: string } | null }>;
-
- 
-async function callRpc<T = unknown>(supabase: any, fnName: string, args: RpcArgs): RpcResult<T> {
-  return supabase.rpc(fnName, args);
-}
-
-// ---------------------------------------------------------------------------
-// verifyStaffPin
-//
-// Validates the PIN against the DB, then issues a pos_session cookie.
-// Returns the new session payload on success.
-// ---------------------------------------------------------------------------
-
-export async function verifyStaffPin(
-  rawInput: VerifyStaffPinInput
-): Promise<ActionResult<PosSessionPayload>> {
-  // ── 1. Validate shape ────────────────────────────────────────────────────
-  const parsed = VerifyStaffPinSchema.safeParse(rawInput);
-  if (!parsed.success) {
-    return {
-      success: false,
-      error: 'Invalid PIN format',
-      fieldErrors: parsed.error.flatten().fieldErrors as Record<string, string[]>,
-    };
-  }
-
-  const { pin } = parsed.data;
-
-  const restaurantId = process.env.NEXT_PUBLIC_DEFAULT_RESTAURANT_ID;
-  if (!restaurantId) {
-    return { success: false, error: 'Restaurant configuration error' };
-  }
-
-  if (pin === '1234') {
-    await setStaffSession({
-      staffId: '00000000-0000-0000-0000-000000000000',
-      restaurantId,
-      name: 'Admin User',
-      role: 'admin',
-    });
-    const bypassSession = await getStaffSession();
-    if (!bypassSession) {
-      return { success: false, error: 'Session could not be created. Please try again.' };
-    }
-    return { success: true, data: bypassSession };
-  }
-
-  if (pin === '5678') {
-    await setStaffSession({
-      staffId: '00000000-0000-0000-0000-000000000001',
-      restaurantId,
-      name: 'Kitchen Staff',
-      role: 'kitchen',
-    });
-    const bypassSession = await getStaffSession();
-    if (!bypassSession) {
-      return { success: false, error: 'Session could not be created. Please try again.' };
-    }
-    return { success: true, data: bypassSession };
-  }
-
-  // ── 2. Call timing-safe PIN verification RPC ─────────────────────────────
-  const supabase = await createClient();
-
-  const { data, error } = await callRpc<
-    | { valid: true; staff_id: string; name: string; role: string }
-    | { valid: false }
-  >(supabase, 'verify_staff_pin', {
-    p_restaurant_id: restaurantId,
-    p_pin: pin,
+  const sb = await createClient();
+  await (sb as any).from("staff").insert({
+    restaurant_id: process.env.NEXT_PUBLIC_DEFAULT_RESTAURANT_ID,
+    name,
+    role,
+    phone,
+    pin_hash
   });
-
-  if (error) {
-    console.error('[verifyStaffPin] RPC error:', error);
-    // Surface generic message — never expose RPC internals
-    return { success: false, error: 'Authentication failed. Please try again.' };
-  }
-
-  const result = data as
-    | { valid: true; staff_id: string; name: string; role: string }
-    | { valid: false };
-
-  if (!result.valid) {
-    return { success: false, error: 'Incorrect PIN. Please try again.' };
-  }
-
-  // ── 3. Validate role is one we accept ────────────────────────────────────
-  const validRoles: PosSessionPayload['role'][] = ['staff', 'kitchen', 'admin', 'owner'];
-  if (!validRoles.includes(result.role as PosSessionPayload['role'])) {
-    return { success: false, error: 'Your account does not have access to this system.' };
-  }
-
-  // ── 4. Issue the session cookie ──────────────────────────────────────────
-  await setStaffSession({
-    staffId: result.staff_id,
-    restaurantId,
-    name: result.name,
-    role: result.role as PosSessionPayload['role'],
-  });
-
-  const session = await getStaffSession();
-  if (!session) {
-    return { success: false, error: 'Session could not be created. Please try again.' };
-  }
-
-  return { success: true, data: session };
+  revalidatePath("/admin/staff");
 }
 
-// ---------------------------------------------------------------------------
-// staffLogout
-//
-// Clears the pos_session cookie and redirects to the login page.
-// Safe to call even if no session exists.
-// ---------------------------------------------------------------------------
-
-export async function staffLogout(): Promise<never> {
-  await clearStaffSession();
-  redirect('/login');
+export async function toggleStaffActive(id: string, currentStatus: boolean) {
+  const sb = await createClient();
+  await (sb as any).from("staff").update({ is_active: !currentStatus }).eq("id", id);
+  revalidatePath("/admin/staff");
 }
 
-// ---------------------------------------------------------------------------
-// getSession
-//
-// Convenience Server Action for reading the current session.
-// Use in Server Components; do not expose to untrusted client components.
-// ---------------------------------------------------------------------------
+export async function resetStaffPin(id: string) {
+  const { createHash } = await import("crypto");
+  const pin_hash = createHash("sha256").update("1234").digest("hex");
+  const sb = await createClient();
+  await (sb as any).from("staff").update({ pin_hash }).eq("id", id);
+  revalidatePath("/admin/staff");
+}
 
-export async function getSession(): Promise<ActionResult<PosSessionPayload>> {
-  const session = await getStaffSession();
+export async function updateStaffRole(id: string, role: string) {
+  const sb = await createClient();
+  await (sb as any).from("staff").update({ role }).eq("id", id);
+  revalidatePath("/admin/staff");
+}
 
-  if (!session) {
-    return { success: false, error: 'No active session' };
+export async function changePinAction(formData: FormData) {
+  const staffId = formData.get("staff_id") as string;
+  const oldPin = formData.get("old_pin") as string;
+  const newPin = formData.get("new_pin") as string;
+
+  const { createHash } = await import("crypto");
+  const oldPinHash = createHash("sha256").update(oldPin).digest("hex");
+  const newPinHash = createHash("sha256").update(newPin).digest("hex");
+
+  const sb = await createClient();
+  const { data: staff } = await (sb as any)
+    .from("staff")
+    .select("id")
+    .eq("id", staffId)
+    .eq("pin_hash", oldPinHash)
+    .single();
+
+  if (!staff) {
+    return { success: false, error: "Invalid previous PIN" };
   }
 
-  return { success: true, data: session };
+  await (sb as any).from("staff").update({ pin_hash: newPinHash }).eq("id", staffId);
+  revalidatePath("/admin/staff");
+  return { success: true };
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { toggleMenuItemAvailability, updateMenuItemPrice, addMenuItem } from "@/actions/admin";
+import { toggleMenuItemAvailability, updateMenuItemPrice, addMenuItem, addCategory } from "@/actions/admin";
 
 interface MenuItem {
   id: string;
@@ -19,9 +19,10 @@ interface Category {
 interface MenuManagerProps {
   categories: Category[];
   menuItems: MenuItem[];
+  isEditUnlocked: boolean;
 }
 
-export function MenuManagerClient({ categories, menuItems: initialItems }: MenuManagerProps) {
+export function MenuManagerClient({ categories, menuItems: initialItems, isEditUnlocked }: MenuManagerProps) {
   const [items, setItems] = useState<MenuItem[]>(initialItems);
   const [search, setSearch] = useState("");
   const [activeTab, setActiveTab] = useState<string>("all");
@@ -29,10 +30,16 @@ export function MenuManagerClient({ categories, menuItems: initialItems }: MenuM
   const [editPriceValue, setEditPriceValue] = useState<string>("");
   
   const [isAdding, setIsAdding] = useState(false);
+  const [isAddingCategory, setIsAddingCategory] = useState(false);
+  
   const [newItemName, setNewItemName] = useState("");
+  const [newItemCategory, setNewItemCategory] = useState(categories.length > 0 ? categories[0].id : "");
   const [newItemPrice, setNewItemPrice] = useState("");
-  const [newItemCategory, setNewItemCategory] = useState(categories[0]?.id || "");
+  
+  const [newCategoryName, setNewCategoryName] = useState("");
+  
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSubmittingCategory, setIsSubmittingCategory] = useState(false);
 
   const handleToggle = async (id: string, currentAvailable: boolean) => {
     // Optimistic Update
@@ -97,6 +104,23 @@ export function MenuManagerClient({ categories, menuItems: initialItems }: MenuM
     }
   };
 
+  const handleAddCategorySubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newCategoryName) return;
+    
+    setIsSubmittingCategory(true);
+    const result = await addCategory(newCategoryName);
+    setIsSubmittingCategory(false);
+
+    if (result.success && result.category) {
+      setCategories((prev) => [...prev, result.category as Category]);
+      setIsAddingCategory(false);
+      setNewCategoryName("");
+    } else {
+      alert("Failed to add category: " + result.error);
+    }
+  };
+
   const filteredItems = items.filter((item) => {
     const matchesSearch = item.name.toLowerCase().includes(search.toLowerCase());
     const matchesCat = activeTab === "all" || item.category_id === activeTab;
@@ -108,12 +132,30 @@ export function MenuManagerClient({ categories, menuItems: initialItems }: MenuM
       <div className="p-6 border-b border-gray-200">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-bold text-brand-900">Menu</h2>
-          <button
-            onClick={() => setIsAdding(true)}
-            className="bg-brand-600 hover:bg-brand-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors"
-          >
-            + Add Item
-          </button>
+          <div className="flex gap-3">
+            <button
+              onClick={() => isEditUnlocked && setIsAddingCategory(true)}
+              disabled={!isEditUnlocked}
+              className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${
+                isEditUnlocked 
+                  ? "bg-brand-100 hover:bg-brand-200 text-brand-800" 
+                  : "bg-gray-100 text-gray-400 cursor-not-allowed"
+              }`}
+            >
+              + Add Category
+            </button>
+            <button
+              onClick={() => isEditUnlocked && setIsAdding(true)}
+              disabled={!isEditUnlocked}
+              className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${
+                isEditUnlocked 
+                  ? "bg-brand-600 hover:bg-brand-700 text-white" 
+                  : "bg-gray-300 text-white cursor-not-allowed"
+              }`}
+            >
+              + Add Item
+            </button>
+          </div>
         </div>
         
         <div className="flex flex-col sm:flex-row gap-4 justify-between">
@@ -181,6 +223,26 @@ export function MenuManagerClient({ categories, menuItems: initialItems }: MenuM
         </div>
       )}
 
+      {isAddingCategory && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <form onSubmit={handleAddCategorySubmit} className="bg-white rounded-xl shadow-xl w-full max-w-sm overflow-hidden">
+            <div className="p-6 border-b border-gray-100">
+              <h3 className="text-lg font-bold text-gray-900">Add New Category</h3>
+            </div>
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Category Name</label>
+                <input type="text" required value={newCategoryName} onChange={(e) => setNewCategoryName(e.target.value)} className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-brand-500 focus:border-brand-500" placeholder="e.g. Desserts" />
+              </div>
+            </div>
+            <div className="p-6 bg-gray-50 border-t border-gray-100 flex justify-end gap-3">
+              <button type="button" onClick={() => setIsAddingCategory(false)} className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900">Cancel</button>
+              <button type="submit" disabled={isSubmittingCategory} className="px-4 py-2 bg-brand-600 text-white rounded-lg text-sm font-medium hover:bg-brand-700 disabled:opacity-50">{isSubmittingCategory ? "Adding..." : "Add Category"}</button>
+            </div>
+          </form>
+        </div>
+      )}
+
       <div className="overflow-x-auto">
         <table className="w-full text-left border-collapse">
           <thead>
@@ -230,10 +292,12 @@ export function MenuManagerClient({ categories, menuItems: initialItems }: MenuM
                         <span className="font-medium text-gray-900">{item.price}</span>
                         <button
                           onClick={() => {
+                            if (!isEditUnlocked) return;
                             setEditingPriceId(item.id);
                             setEditPriceValue(item.price.toString());
                           }}
-                          className="text-brand-600 opacity-0 group-hover:opacity-100 transition-opacity text-xs font-semibold uppercase"
+                          disabled={!isEditUnlocked}
+                          className={`text-brand-600 transition-opacity text-xs font-semibold uppercase ${isEditUnlocked ? "opacity-0 group-hover:opacity-100" : "opacity-30 cursor-not-allowed"}`}
                         >
                           Edit
                         </button>
@@ -242,8 +306,11 @@ export function MenuManagerClient({ categories, menuItems: initialItems }: MenuM
                   </td>
                   <td className="px-6 py-4 text-center">
                     <button
-                      onClick={() => handleToggle(item.id, item.is_available)}
+                      onClick={() => isEditUnlocked && handleToggle(item.id, item.is_available)}
+                      disabled={!isEditUnlocked}
                       className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${
+                        !isEditUnlocked ? "opacity-50 cursor-not-allowed " : ""
+                      }${
                         item.is_available ? "bg-brand-500" : "bg-gray-300"
                       }`}
                     >

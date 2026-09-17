@@ -11,7 +11,7 @@ export default async function AdminLayout({
   const session = await getStaffSession();
 
   return (
-    <div className="min-h-screen bg-slate-50 flex">
+    <div className="h-screen bg-slate-50 flex overflow-hidden">
       {/* Sidebar */}
       <aside className="w-64 bg-brand-900 text-white flex flex-col shrink-0 hidden md:flex">
         <div className="h-16 flex items-center px-4 border-b border-brand-800">
@@ -52,6 +52,12 @@ export default async function AdminLayout({
                 className="px-3 py-2 rounded-md hover:bg-brand-800 transition-colors text-sm font-medium"
               >
                 Table QRs
+              </Link>
+              <Link
+                href="/admin/staff"
+                className="px-3 py-2 rounded-md hover:bg-brand-800 transition-colors text-sm font-medium"
+              >
+                Staff Management
               </Link>
               <Link
                 href="/admin/data"

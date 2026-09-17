@@ -22,12 +22,12 @@ export async function GET(request: Request) {
   const url = new URL(request.url);
   const requestedMonth = url.searchParams.get("month");
 
-  // Determine archive month (12 months ago)
+  // Determine archive month (6 months ago)
   const d = new Date();
-  d.setMonth(d.getMonth() - 12);
+  d.setMonth(d.getMonth() - 6);
   const archiveMonthStr = requestedMonth || `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-01`;
 
-  const result = await runMonthlyArchive(restaurantId, archiveMonthStr, 12);
+  const result = await runMonthlyArchive(restaurantId, archiveMonthStr, 6);
   
   return NextResponse.json(result);
 }

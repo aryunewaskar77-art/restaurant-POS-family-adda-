@@ -193,3 +193,38 @@ export async function updatePantryStock(id: string, newStock: number, minimumReq
   return { success: true, status };
 }
 
+
+export async function addCategory(name: string) {
+  const restaurantId = process.env.NEXT_PUBLIC_DEFAULT_RESTAURANT_ID;
+  if (!restaurantId || !name) {
+    return { success: false, error: "Invalid name" };
+  }
+
+  const supabase = await createClient();
+
+  const { data: maxSort } = await (supabase as any)
+    .from("categories")
+    .select("sort_order")
+    .eq("restaurant_id", restaurantId)
+    .order("sort_order", { ascending: false })
+    .limit(1);
+
+  const nextSortOrder = (maxSort && maxSort.length > 0) ? (maxSort[0].sort_order + 10) : 10;
+
+  const { data: newCategory, error } = await (supabase as any)
+    .from("categories")
+    .insert({
+      restaurant_id: restaurantId,
+      name: name,
+      sort_order: nextSortOrder
+    })
+    .select("id, name")
+    .single();
+
+  if (error) {
+    return { success: false, error: error.message };
+  }
+
+  revalidatePath("/admin/menu");
+  return { success: true, category: newCategory };
+}
