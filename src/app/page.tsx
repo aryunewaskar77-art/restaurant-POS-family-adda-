@@ -17,10 +17,10 @@ export default function Home() {
             <Link href="/admin/menu" className="hover:text-brand-600 transition-colors">
               Menu
             </Link>
-            <Link href="/admin" className="hover:text-brand-600 transition-colors">
+            <Link href="/api/auto-login?redirect=/admin" className="hover:text-brand-600 transition-colors">
               Admin
             </Link>
-            <Link href="/admin/kitchen" className="hover:text-brand-600 transition-colors">
+            <Link href="/api/auto-login?redirect=/admin/kitchen&role=kitchen" className="hover:text-brand-600 transition-colors">
               Kitchen
             </Link>
           </nav>
@@ -52,7 +52,7 @@ export default function Home() {
               Browse Menu
             </Link>
             <Link
-              href="/admin/kitchen"
+              href="/api/auto-login?redirect=/admin/kitchen&role=kitchen"
               className="border border-brand-200 text-brand-700 font-semibold px-8 py-3 rounded-xl hover:bg-brand-50 transition-colors"
             >
               Kitchen Display →
@@ -74,14 +74,14 @@ export default function Home() {
               icon: "🧑‍🍳",
               title: "Kitchen Display",
               desc: "Kitchen staff see new orders the moment they come in — no paper tickets.",
-              href: "/admin/kitchen",
+              href: "/api/auto-login?redirect=/admin/kitchen&role=kitchen",
               cta: "Open KDS",
             },
             {
               icon: "⚙️",
               title: "Admin Panel",
               desc: "Manage your menu, track orders, and monitor revenue from one dashboard.",
-              href: "/admin",
+              href: "/api/auto-login?redirect=/admin",
               cta: "Go to Admin",
             },
           ].map((card) => (
