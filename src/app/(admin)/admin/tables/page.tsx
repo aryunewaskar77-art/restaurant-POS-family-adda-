@@ -3,8 +3,6 @@ import { FloorMapClient } from "@/components/admin/FloorMapClient";
 import type { TableSessionSummary } from "@/types/domain";
 import Link from "next/link";
 import { NewTakeawayButton } from "@/components/admin/NewTakeawayButton";
-import { cookies } from "next/headers";
-import { SectionPinGate } from "@/components/admin/SectionPinGate";
 
 export default async function AdminTablesPage() {
 
