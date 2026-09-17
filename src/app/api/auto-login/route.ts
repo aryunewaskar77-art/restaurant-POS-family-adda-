@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 
 export async function GET(request: Request) {
   const url = new URL(request.url);
-  const redirectTo = url.searchParams.get("redirect") || "/admin";
+  const redirectTo = url.searchParams.get("redirect") || "/admin/dashboard";
   const role = url.searchParams.get("role") || "admin";
 
   const session = {

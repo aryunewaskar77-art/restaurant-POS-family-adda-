@@ -17,7 +17,7 @@ export default function Home() {
             <Link href="/admin/menu" className="hover:text-brand-600 transition-colors">
               Menu
             </Link>
-            <Link href="/api/auto-login?redirect=/admin" className="hover:text-brand-600 transition-colors">
+            <Link href="/api/auto-login?redirect=/admin/dashboard" className="hover:text-brand-600 transition-colors">
               Admin
             </Link>
             <Link href="/api/auto-login?redirect=/admin/kitchen&role=kitchen" className="hover:text-brand-600 transition-colors">
@@ -81,7 +81,7 @@ export default function Home() {
               icon: "⚙️",
               title: "Admin Panel",
               desc: "Manage your menu, track orders, and monitor revenue from one dashboard.",
-              href: "/api/auto-login?redirect=/admin",
+              href: "/api/auto-login?redirect=/admin/dashboard",
               cta: "Go to Admin",
             },
           ].map((card) => (
