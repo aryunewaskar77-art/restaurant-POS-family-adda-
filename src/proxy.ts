@@ -8,7 +8,7 @@ function makeAdminSession(restaurantId: string, role: string) {
     role,
     restaurantId,
   };
-  return Buffer.from(JSON.stringify(session)).toString("base64");
+  return btoa(JSON.stringify(session));
 }
 
 export async function proxy(request: NextRequest) {
