@@ -3,45 +3,33 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { getShiftMetrics } from "@/actions/admin";
 
+export const revalidate = 10; // Cache for 10 seconds
+
 export default async function AdminDashboardPage() {
   const supabase = await createClient();
   const restaurantId = process.env.NEXT_PUBLIC_DEFAULT_RESTAURANT_ID!;
 
-  // 1. Check health
-  const { data: restaurant, error: rError } = await (supabase as any)
-    .from("restaurants")
-    .select("name, is_accepting_orders")
-    .eq("id", restaurantId)
-    .single();
+  // Run ALL queries in parallel instead of one-by-one
+  const [
+    { data: restaurant, error: rError },
+    { count: menuCount },
+    { count: activeOrders },
+    { data: pantryItems },
+    { metrics, success },
+  ] = await Promise.all([
+    (supabase as any).from("restaurants").select("name, is_accepting_orders").eq("id", restaurantId).single(),
+    (supabase as any).from("menu_items").select("id", { count: "exact", head: true }).eq("restaurant_id", restaurantId),
+    (supabase as any).from("orders").select("id", { count: "exact", head: true }).eq("restaurant_id", restaurantId).in("status", ["pending", "preparing", "ready"]),
+    (supabase as any).from("pantry_items").select("current_stock, min_required_stock").eq("restaurant_id", restaurantId),
+    getShiftMetrics(),
+  ]);
 
   const isHealthy = !rError && restaurant;
-
-  // 2. Fetch Menu Stats
-  const { count: menuCount } = await (supabase as any)
-    .from("menu_items")
-    .select("id", { count: "exact", head: true })
-    .eq("restaurant_id", restaurantId);
-
-  // 3. Fetch Active Orders
-  const { count: activeOrders } = await (supabase as any)
-    .from("orders")
-    .select("id", { count: "exact", head: true })
-    .eq("restaurant_id", restaurantId)
-    .in("status", ["pending", "preparing", "ready"]);
-
-  // 4. Fetch Pantry Low Stock
-  const { data: pantryItems } = await (supabase as any)
-    .from("pantry_items")
-    .select("current_stock, min_required_stock")
-    .eq("restaurant_id", restaurantId);
-  
   const lowStockCount = pantryItems?.filter((p: any) => p.current_stock < p.min_required_stock).length || 0;
-
-  // 5. Fetch Revenue
-  const { metrics, success } = await getShiftMetrics();
   const todayRevenue = success && metrics ? metrics.grossRevenue : 0;
   const formatPrice = (amount: number) => 
     new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(amount);
+
 
   return (
     <div className="max-w-5xl mx-auto space-y-8">
