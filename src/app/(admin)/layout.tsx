@@ -1,7 +1,6 @@
 import React from "react";
 import Link from "next/link";
 import { getStaffSession } from "@/lib/auth/session";
-import { LogoutButton } from "@/components/ui/LogoutButton";
 
 export default async function AdminLayout({
   children,
@@ -89,7 +88,6 @@ export default async function AdminLayout({
         <div className="p-4 border-t border-brand-800">
           <div className="text-xs text-brand-300 mb-1">Logged in as</div>
           <div className="font-medium text-sm truncate mb-3">{session?.name || "Admin"} ({session?.role})</div>
-          <LogoutButton className="text-sm text-brand-200 hover:text-white w-full text-left" />
         </div>
       </aside>
 
@@ -97,7 +95,6 @@ export default async function AdminLayout({
       <div className="md:hidden flex flex-col flex-1 w-full max-w-full">
         <header className="h-16 bg-brand-900 text-white flex items-center justify-between px-4">
           <div className="font-bold">Family Adda Admin</div>
-          <LogoutButton className="text-sm text-brand-200 hover:text-white" />
         </header>
         <main className="flex-1 overflow-auto p-4 sm:p-8">
           {children}
