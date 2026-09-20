@@ -1,6 +1,6 @@
 import React from "react";
 import { createClient } from "@/lib/supabase/server";
-import { runMonthlyArchive } from "@/actions/archival";
+import { runAutoArchive, evacuateDatabase } from "@/actions/archival";
 import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 import { UnlockEditingBanner } from "@/components/admin/UnlockEditingBanner";
@@ -15,16 +15,14 @@ export default async function DataManagementPage() {
   const supabase = await createClient();
   const restaurantId = process.env.NEXT_PUBLIC_DEFAULT_RESTAURANT_ID;
 
-  const savedRetention = cookieStore.get("archive_retention")?.value || "12";
+  const savedRetention = cookieStore.get("archive_retention")?.value || "6";
 
-   
   const { data: jobs } = await (supabase as any)
     .from("archive_jobs")
     .select("*")
     .eq("restaurant_id", restaurantId)
-    .order("archive_month", { ascending: false });
+    .order("created_at", { ascending: false });
 
-   
   const { count: sessionCount } = await (supabase as any)
     .from("table_sessions")
     .select("*", { count: "exact", head: true })
@@ -32,16 +30,21 @@ export default async function DataManagementPage() {
 
   async function triggerArchive(formData: FormData) {
     "use server";
-    const month = formData.get("archive_month") as string;
     const retentionStr = formData.get("retention") as string;
-    const retention = parseInt(retentionStr, 10);
-    if (!month) return;
+    const retention = parseInt(retentionStr, 10) || 6;
     
     const cookieStore = await cookies();
     cookieStore.set("archive_retention", retentionStr);
 
-    const res = await runMonthlyArchive(restaurantId!, `${month}-01`, retention);
+    const res = await runAutoArchive(restaurantId!, retention);
     console.log("Archive Triggered:", res);
+    revalidatePath("/admin/data");
+    return res;
+  }
+  
+  async function triggerEvacuate() {
+    "use server";
+    const res = await evacuateDatabase(restaurantId!);
     revalidatePath("/admin/data");
     return res;
   }
@@ -69,7 +72,7 @@ export default async function DataManagementPage() {
 
         <div className="bg-white p-6 rounded-2xl shadow-sm border border-brand-200 border-l-4 border-l-brand-600">
           <h2 className="text-lg font-bold text-gray-800 mb-4">Manual Archive</h2>
-          <ArchiveForm savedRetention={savedRetention} triggerArchive={triggerArchive} isEditUnlocked={isEditUnlocked} />
+          <ArchiveForm savedRetention={savedRetention} triggerArchive={triggerArchive} triggerEvacuate={triggerEvacuate} isEditUnlocked={isEditUnlocked} />
         </div>
       </div>
 

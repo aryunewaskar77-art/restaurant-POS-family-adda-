@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { runMonthlyArchive } from "@/actions/archival";
+import { runAutoArchive } from "@/actions/archival";
 
 export async function GET(request: Request) {
   // Protect route
@@ -16,18 +16,11 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Restaurant ID not configured" }, { status: 500 });
   }
 
-  // Determine archive month (12 months ago, previous month from that)
-  // Example: If today is Sept 2026, 12 months ago is Sept 2025. 
-  // We want to archive Aug 2025 (or everything up to Sept 2025). 
   const url = new URL(request.url);
-  const requestedMonth = url.searchParams.get("month");
+  const retentionParam = url.searchParams.get("retention");
+  const retention = retentionParam ? parseInt(retentionParam, 10) : 6;
 
-  // Determine archive month (6 months ago)
-  const d = new Date();
-  d.setMonth(d.getMonth() - 6);
-  const archiveMonthStr = requestedMonth || `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-01`;
-
-  const result = await runMonthlyArchive(restaurantId, archiveMonthStr, 6);
+  const result = await runAutoArchive(restaurantId, retention);
   
   return NextResponse.json(result);
 }

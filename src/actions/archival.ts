@@ -21,21 +21,16 @@ function toCSV(data: any[]) {
   return [headers.join(","), ...rows].join("\n");
 }
 
-export async function runMonthlyArchive(restaurantId: string, archiveMonthDateStr: string, retentionMonths: number = 6) {
+export async function runAutoArchive(restaurantId: string, retentionMonths: number = 6) {
   const supabase = supabaseAdmin;
   
   const cutoffDate = new Date();
   cutoffDate.setMonth(cutoffDate.getMonth() - retentionMonths);
+  const endOfTargetMonth = new Date(cutoffDate.getFullYear(), cutoffDate.getMonth() + 1, 0, 23, 59, 59).toISOString();
   
-  const archiveMonth = new Date(archiveMonthDateStr);
-  if (archiveMonth > cutoffDate) {
-    return { success: false, error: "Cannot archive data newer than the retention period." };
-  }
-  
-  const startOfMonth = new Date(archiveMonth.getFullYear(), archiveMonth.getMonth(), 1).toISOString();
-  const endOfMonth = new Date(archiveMonth.getFullYear(), archiveMonth.getMonth() + 1, 0, 23, 59, 59).toISOString();
+  // We'll use the cutoff date's month string for record keeping
+  const archiveMonthDateStr = `${cutoffDate.getFullYear()}-${String(cutoffDate.getMonth() + 1).padStart(2, '0')}`;
 
-   
   const { data: job, error: jobErr } = await (supabase as any)
     .from("archive_jobs")
     .insert({
@@ -47,7 +42,7 @@ export async function runMonthlyArchive(restaurantId: string, archiveMonthDateSt
     .single();
 
   if (jobErr || !job) {
-    return { success: false, error: "Failed to create archive job or job already completed." };
+    return { success: false, error: "Failed to create archive job." };
   }
 
   const jobId = job.id;
@@ -59,14 +54,12 @@ export async function runMonthlyArchive(restaurantId: string, archiveMonthDateSt
       .select("*")
       .eq("restaurant_id", restaurantId)
       .in("status", ["paid", "abandoned"])
-      .gte("closed_at", startOfMonth)
-      .lte("closed_at", endOfMonth);
+      .lte("closed_at", endOfTargetMonth);
 
     if (sessErr) throw new Error("Failed to fetch sessions: " + sessErr.message);
     if (!sessions || sessions.length === 0) {
-       
       await (supabase as any).from("archive_jobs").update({ status: "completed", error_message: "No eligible records found.", completed_at: new Date().toISOString() }).eq("id", jobId);
-      return { success: true, message: "No records to archive." };
+      return { success: true, message: `No records older than ${retentionMonths} months to archive.` };
     }
 
      
@@ -195,6 +188,23 @@ export async function runMonthlyArchive(restaurantId: string, archiveMonthDateSt
       error_message: err.message,
       completed_at: new Date().toISOString()
     }).eq("id", jobId);
+    return { success: false, error: err.message };
+  }
+}
+
+export async function evacuateDatabase(restaurantId: string) {
+  const supabase = supabaseAdmin;
+  
+  try {
+    // Delete all table_sessions for this restaurant (cascades or sets null to orders)
+    // Actually, orders are set to null, so we must delete orders first, or use a manual delete
+    await (supabase as any).from("orders").delete().eq("restaurant_id", restaurantId);
+    await (supabase as any).from("table_sessions").delete().eq("restaurant_id", restaurantId);
+    await (supabase as any).from("archive_jobs").delete().eq("restaurant_id", restaurantId);
+    
+    revalidatePath("/admin/data");
+    return { success: true, message: "Database completely evacuated (transactions wiped)." };
+  } catch (err: any) {
     return { success: false, error: err.message };
   }
 }

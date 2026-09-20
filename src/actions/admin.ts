@@ -65,12 +65,18 @@ export async function getShiftMetrics() {
   const restaurantId = process.env.NEXT_PUBLIC_DEFAULT_RESTAURANT_ID;
   const supabase = await createClient();
 
-  // For a real app, you'd filter by today's date/shift. We'll simplify to fetch recent completed/voided orders
+  // Calculate start of today in local time
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const startOfDay = today.toISOString();
+
+  // Filter by today's date
   const { data: orders, error } = await (supabase as any)
     .from("orders")
     .select("id, status, total, placed_at, updated_at")
     .eq("restaurant_id", restaurantId!)
-    .in("status", ["completed", "voided", "cancelled"]);
+    .in("status", ["completed", "voided", "cancelled"])
+    .gte("placed_at", startOfDay);
 
   if (error || !orders) {
     return { success: false, error: "Failed to fetch shift metrics", metrics: null };
