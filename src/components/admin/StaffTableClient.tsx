@@ -156,10 +156,6 @@ export function StaffTableClient({ staffMembers, isEditUnlocked }: { staffMember
             <form onSubmit={handlePinChangeSubmit} className="space-y-4">
               <input type="hidden" name="staff_id" value={changingPinFor} />
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Previous 4-Digit PIN</label>
-                <input type="text" name="old_pin" required pattern="[0-9]{4}" maxLength={4} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500 text-center tracking-widest text-xl font-mono shadow-sm" placeholder="1234" />
-              </div>
-              <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">New 4-Digit PIN</label>
                 <input type="text" name="new_pin" required pattern="[0-9]{4}" maxLength={4} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500 text-center tracking-widest text-xl font-mono shadow-sm" placeholder="5678" />
               </div>

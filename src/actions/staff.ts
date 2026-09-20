@@ -44,25 +44,17 @@ export async function updateStaffRole(id: string, role: string) {
 
 export async function changePinAction(formData: FormData) {
   const staffId = formData.get("staff_id") as string;
-  const oldPin = formData.get("old_pin") as string;
   const newPin = formData.get("new_pin") as string;
 
+  if (!newPin || newPin.length !== 4) {
+    return { success: false, error: "New PIN must be exactly 4 digits." };
+  }
+
   const { createHash } = await import("crypto");
-  const oldPinHash = createHash("sha256").update(oldPin).digest("hex");
   const newPinHash = createHash("sha256").update(newPin).digest("hex");
 
   const sb = await createClient();
-  const { data: staff } = await (sb as any)
-    .from("staff")
-    .select("id")
-    .eq("id", staffId)
-    .eq("pin_hash", oldPinHash)
-    .single();
-
-  if (!staff) {
-    return { success: false, error: "Invalid previous PIN" };
-  }
-
+  
   await (sb as any).from("staff").update({ pin_hash: newPinHash }).eq("id", staffId);
   revalidatePath("/admin/staff");
   return { success: true };
