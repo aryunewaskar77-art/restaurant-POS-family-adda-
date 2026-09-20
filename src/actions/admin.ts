@@ -234,3 +234,27 @@ export async function addCategory(name: string) {
   revalidatePath("/admin/menu");
   return { success: true, category: newCategory };
 }
+
+export async function deleteMenuItem(menuItemId: string) {
+  const restaurantId = process.env.NEXT_PUBLIC_DEFAULT_RESTAURANT_ID;
+  if (!restaurantId || !menuItemId) {
+    return { success: false, error: "Invalid request parameters" };
+  }
+
+  const supabase = await createClient();
+
+  const { error } = await (supabase as any)
+    .from("menu_items")
+    .delete()
+    .eq("id", menuItemId)
+    .eq("restaurant_id", restaurantId);
+
+  if (error) {
+    return { success: false, error: error.message };
+  }
+
+  revalidatePath("/admin/menu");
+  revalidatePath("/order/[tableId]", "page");
+
+  return { success: true };
+}

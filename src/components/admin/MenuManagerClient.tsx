@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { toggleMenuItemAvailability, updateMenuItemPrice, addMenuItem, addCategory } from "@/actions/admin";
+import { toggleMenuItemAvailability, updateMenuItemPrice, addMenuItem, addCategory, deleteMenuItem } from "@/actions/admin";
 
 interface MenuItem {
   id: string;
@@ -28,6 +28,20 @@ export function MenuManagerClient({ categories: initialCategories, menuItems: in
   const [search, setSearch] = useState("");
   const [activeTab, setActiveTab] = useState<string>("all");
   const [editingPriceId, setEditingPriceId] = useState<string | null>(null);
+
+  const handleDelete = async (itemId: string, itemName: string) => {
+    if (!isEditUnlocked) return;
+    if (!window.confirm(`Are you absolutely sure you want to permanently delete "${itemName}" from the database? This cannot be undone.`)) {
+      return;
+    }
+    
+    setItems((prev) => prev.filter((i) => i.id !== itemId));
+    const res = await deleteMenuItem(itemId);
+    if (!res.success) {
+      alert("Failed to delete item: " + res.error);
+      setItems(initialItems); // Revert
+    }
+  };
   const [editPriceValue, setEditPriceValue] = useState<string>("");
   
   const [isAdding, setIsAdding] = useState(false);
@@ -252,6 +266,7 @@ export function MenuManagerClient({ categories: initialCategories, menuItems: in
               <th className="px-6 py-3 font-medium">Category</th>
               <th className="px-6 py-3 font-medium text-right">Price (₹)</th>
               <th className="px-6 py-3 font-medium text-center">Status</th>
+              <th className="px-6 py-3 font-medium text-right">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200">
@@ -327,12 +342,26 @@ export function MenuManagerClient({ categories: initialCategories, menuItems: in
                       </span>
                     )}
                   </td>
+                  <td className="px-6 py-4 text-right">
+                    <button
+                      onClick={() => handleDelete(item.id, item.name)}
+                      disabled={!isEditUnlocked}
+                      className={`text-red-500 hover:text-red-700 transition-colors p-2 rounded-lg hover:bg-red-50 ${!isEditUnlocked ? "opacity-30 cursor-not-allowed" : ""}`}
+                      title="Permanently Delete Item"
+                    >
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M3 6h18"></path>
+                        <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
+                        <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
+                      </svg>
+                    </button>
+                  </td>
                 </tr>
               );
             })}
             {filteredItems.length === 0 && (
               <tr>
-                <td colSpan={4} className="px-6 py-8 text-center text-gray-500 italic">
+                <td colSpan={5} className="px-6 py-8 text-center text-gray-500 italic">
                   No menu items found.
                 </td>
               </tr>
